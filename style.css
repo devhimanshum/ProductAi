@@ -500,6 +500,8 @@ body {
   color: white;
   border-color: var(--accent);
 }
+
+.verified-badge {
   background: linear-gradient(135deg, #f59e0b, #d946ef);
   color: white;
   padding: 0.25rem 0.75rem;
