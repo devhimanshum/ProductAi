@@ -40,8 +40,8 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
-// ── Serve Static Frontend ───────────────────────────────────────────────────
-const frontendPath = path.join(__dirname, "../frontend");
+// ── Serve Static Frontend (Updated for Root Structure) ──────────────────────
+const frontendPath = path.join(__dirname, "..");
 app.use(express.static(frontendPath));
 
 // ── Catch-all to serve index.html (SPA) ──────────────────────────────────────

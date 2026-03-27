@@ -5,11 +5,11 @@
 
 const express    = require("express");
 const router     = express.Router();
-const tokenStore = require("../services/tokenStore");
+const { getAll, getTotals } = require("../../services/tokenStore");
 
 router.get("/", (req, res) => {
-  const entries = tokenStore.getAll();
-  const totals  = tokenStore.getTotals();
+  const entries = getAll();
+  const totals  = getTotals();
 
   res.json({
     success: true,

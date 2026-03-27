@@ -1,4 +1,4 @@
-const { compareProduct } = require("./services/openai");
+const { compareProduct } = require("../services/openai");
 
 module.exports = async (req, res) => {
   // Add CORS headers for serverless
