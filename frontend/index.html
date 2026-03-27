@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ProductAI — Smart Price Comparison</title>
+  <meta name="description" content="Instantly compare product prices across Amazon, Flipkart, Myntra, and 10+ platforms using AI. Track token usage in real-time." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── BACKGROUND ORBS ─────────────────────────────────────────── -->
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+  <div class="bg-orb orb-3"></div>
+
+  <!-- ── HEADER ──────────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">ProductAI</span>
+        <span class="logo-badge">GPT-4o Powered</span>
+      </div>
+      <div class="header-meta">
+        <div class="status-dot" id="statusDot" title="Backend status"></div>
+        <span class="status-label" id="statusLabel">Connecting…</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── MAIN ────────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- HERO --------------------------------------------------------->
+    <section class="hero">
+      <h1 class="hero-title">Find the <span class="gradient-text">Best Price</span><br />Across Every Platform</h1>
+      <p class="hero-sub">Enter a product URL or name. AI will search 14+ e-commerce platforms and surface the best deals.</p>
+    </section>
+
+    <!-- SEARCH CARD ------------------------------------------------->
+    <section class="card search-card">
+      <form id="searchForm" novalidate>
+        <div class="input-grid">
+          <!-- Product URL -->
+          <div class="input-group">
+            <label class="input-label" for="productUrl">
+              <span class="label-icon">🔗</span> Product URL
+              <span class="label-hint">Optional — Paste any product page link</span>
+            </label>
+            <input
+              type="url"
+              id="productUrl"
+              name="productUrl"
+              class="input-field"
+              placeholder="https://www.amazon.in/dp/..."
+              autocomplete="off"
+            />
+          </div>
+
+          <!-- Divider -->
+          <div class="or-divider"><span>OR</span></div>
+
+          <!-- Product Name -->
+          <div class="input-group">
+            <label class="input-label" for="productName">
+              <span class="label-icon">🏷️</span> Product Name
+              <span class="label-hint">Optional — Type or paste product name</span>
+            </label>
+            <input
+              type="text"
+              id="productName"
+              name="productName"
+              class="input-field"
+              placeholder="e.g. Samsung Galaxy S24 Ultra 256GB"
+              autocomplete="off"
+            />
+          </div>
+        </div>
+
+        </div>
+
+        <!-- Error Banner -->
+        <div class="error-banner hidden" id="errorBanner" role="alert">
+          <span class="error-icon">⚠️</span>
+          <span id="errorText">Please fill in at least one field.</span>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="btn-search" id="searchBtn">
+          <span class="btn-text" id="btnText">
+            <span class="btn-icon">🔍</span> Compare Prices
+          </span>
+          <span class="btn-loader hidden" id="btnLoader">
+            <span class="spinner-sm"></span> Searching…
+          </span>
+        </button>
+      </form>
+    </section>
+
+    <!-- DISCLAIMER --------------------------------------------------->
+    <div class="disclaimer">
+      <span class="disclaimer-icon">ℹ️</span>
+      Results are AI-estimated based on training data — not live scraped prices. Treat as reference.
+    </div>
+
+    <!-- RESULTS SECTION --------------------------------------------->
+    <section id="resultsSection" class="hidden">
+      <!-- Product Overview Card -->
+      <div class="card product-overview" id="productOverview">
+        <div class="overview-layout">
+          <div class="overview-image-wrap">
+            <img id="overviewImage" src="" alt="Product Image" />
+          </div>
+          <div class="overview-content">
+            <div class="overview-top">
+              <h2 id="overviewTitle" class="overview-title">—</h2>
+              <p id="overviewDesc" class="overview-desc">—</p>
+            </div>
+            <div class="overview-specs">
+              <h3>Specifications</h3>
+              <ul id="overviewSpecsList"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Identified Product Meta -->
+      <div class="result-header card">
+        <div class="result-meta">
+          <div class="result-identified">
+            <span class="result-label">Product Identified</span>
+            <span class="result-name" id="productIdentified">—</span>
+          </div>
+          <div class="result-badges">
+            <span class="badge badge-category" id="productCategory">—</span>
+            <span class="badge badge-count" id="resultCount">0 platforms</span>
+            <span class="badge badge-tokens" id="lastTokenBadge">— tokens</span>
+          </div>
+        </div>
+        <!-- Sort Controls -->
+        <div class="sort-controls">
+          <span class="sort-label">Sort by:</span>
+          <button class="sort-btn active" id="sortPrice" onclick="sortResults('price')">Price ↑</button>
+          <button class="sort-btn" id="sortPlatform" onclick="sortResults('platform')">Platform</button>
+          <button class="sort-btn" id="sortAvail" onclick="sortResults('availability')">Availability</button>
+        </div>
+      </div>
+
+      <!-- Results Table -->
+      <div class="table-wrap card">
+        <table class="results-table" id="resultsTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Platform</th>
+              <th>Product Name</th>
+              <th>Price</th>
+              <th>Discount</th>
+              <th>Reviews</th>
+              <th>Availability</th>
+              <th>Link</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody">
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- EMPTY STATE -------------------------------------------------->
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">🛒</div>
+      <p class="empty-title">No search yet</p>
+      <p class="empty-sub">Enter a product URL or name above to start comparing</p>
+    </div>
+
+    <!-- ── TOKEN USAGE DASHBOARD ─────────────────────────────────── -->
+    <section class="card token-dashboard" id="tokenDashboard">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span>📊</span> Token Usage Dashboard
+        </h2>
+        <button class="btn-refresh" id="refreshTokensBtn" onclick="loadTokens()" title="Refresh">↻ Refresh</button>
+      </div>
+
+      <!-- Stat Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Total API Calls</span>
+          <span class="stat-value" id="statCalls">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Input Tokens</span>
+          <span class="stat-value accent-blue" id="statInput">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Output Tokens</span>
+          <span class="stat-value accent-purple" id="statOutput">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total Tokens</span>
+          <span class="stat-value accent-green" id="statTotal">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Est. Cost (USD)</span>
+          <span class="stat-value accent-gold" id="statCost">$0.0000</span>
+        </div>
+      </div>
+
+      <!-- Token History Table -->
+      <div class="table-wrap" id="tokenTableWrap">
+        <table class="token-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Query</th>
+              <th>Model</th>
+              <th>Input Tokens</th>
+              <th>Output Tokens</th>
+              <th>Total Tokens</th>
+              <th>Est. Cost</th>
+            </tr>
+          </thead>
+          <tbody id="tokenBody">
+            <tr class="empty-row">
+              <td colspan="7">No API calls yet — run a search to see token usage</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── TOAST NOTIFICATION ───────────────────────────────────────── -->
+  <div class="toast hidden" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
