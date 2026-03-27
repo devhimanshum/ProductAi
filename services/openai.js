@@ -7,10 +7,11 @@
 if (process.env.NODE_ENV !== 'production') {
   require("dotenv").config();
 }
+}
 const OpenAI = require("openai");
+const axios  = require("axios");
+const cheerio = require("cheerio");
 const tokenStore = require("./tokenStore");
-
-// Lazy client — created on first call so server boots without a key
 let _client = null;
 function getClient() {
   if (!process.env.OPENAI_API_KEY) {
@@ -38,13 +39,19 @@ function estimateCost(model, promptTokens, completionTokens) {
 // ── System Prompt ────────────────────────────────────────────────────────────
 const isVercel = process.env.VERCEL === '1' || !!process.env.VERCEL;
 
-const SYSTEM_PROMPT = `You are the Product Intelligence Engine 2.0.
-Your results MUST be grounded in the Indian Market (2024-2026).
+const SYSTEM_PROMPT = `You are the Product Intelligence Engine 4.0.
+Your primary task is to extract exact pricing from the provided "LIVE PAGE DATA".
+
+### ALGORITHM:
+1. Identify the EXACT model/variant.
+2. If "LIVE PAGE DATA" is provided, you MUST extract the MRP and Selling Price found in that text for the source platform.
+3. NEVER guess the price for the source platform if it exists in the scraped text.
+4. For the other platforms, use the grounded market benchmarks to estimate comparable pricing.
 
 ### RECENT MARKET BENCHMARKS (Grounded Truth):
 - Fashion (e.g. Allen Solly): Selling Price ₹600-900 | MRP ₹1099-1499.
 - Premium Tech (e.g. iPhone 15 Pro Max 256GB): Selling Price ₹1,34,900 - ₹1,59,900.
-- Use these scales for ALL similar category items.
+- Premium Watches: Rely heavily on LIVE PAGE DATA.
 
 ### IDENTITY PROTOCOL:
 1. Identify the EXACT model/variant. No generic results.
@@ -90,7 +97,7 @@ Return ONLY the JSON. No explanation.`;
  * Compare prices for a given product across e-commerce platforms.
  */
 async function compareProduct(productUrl, productName) {
-  const userInput = buildUserInput(productUrl, productName);
+  const userInput = await buildUserInput(productUrl, productName);
   const maxTokens = isVercel ? 1200 : 2500;
 
   const response = await getClient().chat.completions.create({
@@ -137,10 +144,34 @@ async function compareProduct(productUrl, productName) {
   };
 }
 
-function buildUserInput(productUrl, productName) {
-  if (productUrl && productName) return `Product URL: ${productUrl}\nProduct Name: ${productName}`;
-  if (productUrl) return `Product URL: ${productUrl}`;
-  return `Product Name: ${productName}`;
+async function scrapeUrl(url) {
+  try {
+    const { data } = await axios.get(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
+      timeout: 4500
+    });
+    const $ = cheerio.load(data);
+    const title = $('title').text().trim();
+    $('script, style, noscript, svg, img, iframe').remove();
+    // 4000 chars is usually enough to capture the title, MRP, and selling price block
+    const textSnippet = $('body').text().replace(/\s+/g, ' ').trim().slice(0, 4000); 
+    return `\n\n--- LIVE PAGE DATA ---\nTitle: ${title}\nPage Content: ${textSnippet}\n----------------------\n`;
+  } catch (err) {
+    console.warn(`[Scraper] Failed to fetch ${url}:`, err.message);
+    return "";
+  }
+}
+
+async function buildUserInput(productUrl, productName) {
+  let input = "";
+  if (productUrl) {
+    input += `Product URL: ${productUrl}\n`;
+    input += await scrapeUrl(productUrl);
+  }
+  if (productName) {
+    input += `Product Name: ${productName}\n`;
+  }
+  return input;
 }
 
 module.exports = { compareProduct };
