@@ -148,6 +148,14 @@ function renderResults(data) {
   productCategory.textContent   = data.category || "Other";
   resultCount.textContent       = `${results.length} platform${results.length !== 1 ? "s" : ""}`;
 
+  // Update Verify Button
+  const verifyBtn = document.getElementById("verifyBtn");
+  if (data.productIdentified) {
+    const q = encodeURIComponent(`${data.productIdentified} price in India`);
+    verifyBtn.href = `https://www.google.com/search?q=${q}`;
+    verifyBtn.classList.remove("hidden");
+  }
+
   // Render table
   renderTable(results);
 
