@@ -1,0 +1,8 @@
+{
+  "name": "product-ai-vercel",
+  "version": "1.0.0",
+  "dependencies": {
+    "openai": "^4.47.1",
+    "dotenv": "^16.4.5"
+  }
+}
