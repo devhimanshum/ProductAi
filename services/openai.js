@@ -7,7 +7,6 @@
 if (process.env.NODE_ENV !== 'production') {
   require("dotenv").config();
 }
-}
 const OpenAI = require("openai");
 const axios  = require("axios");
 const cheerio = require("cheerio");
@@ -152,10 +151,11 @@ async function scrapeUrl(url) {
     });
     const $ = cheerio.load(data);
     const title = $('title').text().trim();
+    const ogImage = $('meta[property="og:image"]').attr('content') || $('link[rel="image_src"]').attr('href') || '';
     $('script, style, noscript, svg, img, iframe').remove();
     // 4000 chars is usually enough to capture the title, MRP, and selling price block
     const textSnippet = $('body').text().replace(/\s+/g, ' ').trim().slice(0, 4000); 
-    return `\n\n--- LIVE PAGE DATA ---\nTitle: ${title}\nPage Content: ${textSnippet}\n----------------------\n`;
+    return `\n\n--- LIVE PAGE DATA ---\nTitle: ${title}\nMain Image URL: ${ogImage}\nPage Content: ${textSnippet}\n----------------------\n`;
   } catch (err) {
     console.warn(`[Scraper] Failed to fetch ${url}:`, err.message);
     return "";

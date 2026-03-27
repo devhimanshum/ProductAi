@@ -106,8 +106,7 @@ searchForm.addEventListener("submit", async (e) => {
     saveTokenCall(data, productName, productUrl);
 
     // Update token badge
-    const u = data.usage || {};
-    lastTokenBadge.textContent = `${(u.totalTokens || 0).toLocaleString()} tokens used`;
+    if (lastTokenBadge) lastTokenBadge.textContent = `${(u.totalTokens || 0).toLocaleString()} tokens used`;
 
     // Refresh token dashboard
     await loadTokens();
@@ -146,19 +145,6 @@ function renderResults(data) {
 
   // Render OverView (Image, Specs, etc.)
   renderOverview(data.productInfo, data.productIdentified);
-
-  // Update header
-  productIdentified.textContent = data.productIdentified || "Unknown Product";
-  productCategory.textContent   = data.category || "Other";
-  resultCount.textContent       = `${results.length} platform${results.length !== 1 ? "s" : ""}`;
-
-  // Update Verify Button
-  const verifyBtn = document.getElementById("verifyBtn");
-  if (data.productIdentified) {
-    const q = encodeURIComponent(`${data.productIdentified} price in India`);
-    verifyBtn.href = `https://www.google.com/search?q=${q}`;
-    verifyBtn.classList.remove("hidden");
-  }
 
   // Render table
   renderTable(results);
