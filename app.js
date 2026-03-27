@@ -4,7 +4,11 @@
  */
 
 // ── Config ────────────────────────────────────────────────────────
-const API_BASE = window.location.hostname === 'localhost' ? "http://localhost:3001/api" : "/api";
+// ── Config ────────────────────────────────────────────────────────
+const isLocal = window.location.hostname === 'localhost' || 
+                window.location.hostname === '127.0.0.1' || 
+                window.location.hostname.endsWith('.local');
+const API_BASE = isLocal ? "http://localhost:3001/api" : "/api";
 
 // ── State ─────────────────────────────────────────────────────────
 let currentResults  = [];
