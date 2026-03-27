@@ -89,6 +89,9 @@ searchForm.addEventListener("submit", async (e) => {
     currentResults = data.results || [];
     renderResults(data);
 
+    // Save token usage locally for stateless persistence
+    saveTokenCall(data, productName, productUrl);
+
     // Update token badge
     const u = data.usage || {};
     lastTokenBadge.textContent = `${(u.totalTokens || 0).toLocaleString()} tokens used`;
@@ -302,11 +305,35 @@ function sortResultsArray(arr, key, dir) {
 // ── Token Dashboard ───────────────────────────────────────────────
 async function loadTokens() {
   try {
-    const res  = await fetch(`${API_BASE}/tokens`);
-    const data = await res.json();
-    if (!data.success) return;
+    // 1. Get backend stats (works on Local/Render, might be 0 on Vercel)
+    let backendTotals = { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, estimatedCostUSD: 0 };
+    let backendEntries = [];
+    
+    try {
+      const res = await fetch(`${API_BASE}/tokens`);
+      const data = await res.json();
+      if (data.success) {
+        backendTotals = data.totals;
+        backendEntries = data.entries || [];
+      }
+    } catch (e) { console.warn("Backend tokens unavailable"); }
 
-    const { totals, entries } = data;
+    // 2. Get local history (The "Stateless Fix" for Vercel)
+    const localLog = JSON.parse(localStorage.getItem("product_ai_tokens") || "[]");
+    
+    // 3. Merge or prefer local for Vercel, backend for local
+    // For now, we'll combine them or just use local if on Vercel
+    const entries = localLog.length > 0 ? localLog : backendEntries;
+    
+    // Calculate totals from entries (most reliable)
+    const totals = entries.reduce((acc, e) => {
+      acc.calls++;
+      acc.promptTokens += (e.promptTokens || 0);
+      acc.completionTokens += (e.completionTokens || 0);
+      acc.totalTokens += (e.totalTokens || 0);
+      acc.estimatedCostUSD += (e.estimatedCostUSD || 0);
+      return acc;
+    }, { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, estimatedCostUSD: 0 });
 
     // Update stat cards
     document.getElementById("statCalls").textContent  = totals.calls.toLocaleString();
@@ -322,13 +349,14 @@ async function loadTokens() {
       return;
     }
 
-    tbody.innerHTML = entries.map(e => {
-      const ts = new Date(e.timestamp).toLocaleTimeString("en-IN", { hour12: true, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    tbody.innerHTML = entries.slice(0, 50).map(e => {
+      const ts = new Date(e.timestamp || Date.now()).toLocaleTimeString("en-IN", { hour12: true, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      const query = e.productQuery || e.productName || "Search";
       return `
         <tr>
           <td style="white-space:nowrap;color:var(--text-muted);font-size:0.78rem">${ts}</td>
-          <td><span class="token-query" title="${escHtml(e.productQuery)}">${escHtml(e.productQuery)}</span></td>
-          <td><span class="model-pill">${escHtml(e.model)}</span></td>
+          <td><span class="token-query" title="${escHtml(query)}">${escHtml(query)}</span></td>
+          <td><span class="model-pill">${escHtml(e.model || "gpt-4o-mini")}</span></td>
           <td>${(e.promptTokens || 0).toLocaleString()}</td>
           <td>${(e.completionTokens || 0).toLocaleString()}</td>
           <td>${(e.totalTokens || 0).toLocaleString()}</td>
@@ -339,6 +367,24 @@ async function loadTokens() {
   } catch (err) {
     console.warn("[loadTokens]", err.message);
   }
+}
+
+// Helper to save token call
+function saveTokenCall(data, productName, productUrl) {
+  if (!data.usage) return;
+  const entry = {
+    timestamp: new Date().toISOString(),
+    productQuery: productName || productUrl || "Search",
+    model: data.usage.model || "gpt-4o-mini",
+    promptTokens: data.usage.promptTokens,
+    completionTokens: data.usage.completionTokens,
+    totalTokens: data.usage.totalTokens,
+    estimatedCostUSD: data.usage.estimatedCostUSD
+  };
+  
+  const log = JSON.parse(localStorage.getItem("product_ai_tokens") || "[]");
+  log.unshift(entry);
+  localStorage.setItem("product_ai_tokens", JSON.stringify(log.slice(0, 100))); // Keep last 100
 }
 
 // ── Toast ─────────────────────────────────────────────────────────
