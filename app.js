@@ -79,7 +79,16 @@ searchForm.addEventListener("submit", async (e) => {
       body: JSON.stringify({ productUrl, productName }),
     });
 
-    const data = await res.json();
+    if (res.status === 504) {
+      throw new Error("Search timed out (Vercel 10s limit). Please try a more specific product name.");
+    }
+
+    let data;
+    try {
+      data = await res.json();
+    } catch (e) {
+      throw new Error("Invalid response from server. It may have timed out or crashed.");
+    }
 
     if (!res.ok) {
       throw new Error(data.error || data.message || "Unknown server error");
