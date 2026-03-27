@@ -56,18 +56,20 @@ function add(entry) {
  * Get cumulative totals across all entries.
  */
 function getTotals() {
-  const tokenLog = getAll();
-  return tokenLog.reduce(
+  const tokenLog = getAll() || [];
+  const totals = tokenLog.reduce(
     (acc, entry) => {
-      acc.promptTokens += entry.promptTokens || 0;
-      acc.completionTokens += entry.completionTokens || 0;
-      acc.totalTokens += entry.totalTokens || 0;
-      acc.estimatedCostUSD += entry.estimatedCostUSD || 0;
+      acc.promptTokens += Number(entry.promptTokens) || 0;
+      acc.completionTokens += Number(entry.completionTokens) || 0;
+      acc.totalTokens += Number(entry.totalTokens) || 0;
+      acc.estimatedCostUSD += Number(entry.estimatedCostUSD) || 0;
       acc.calls += 1;
       return acc;
     },
     { promptTokens: 0, completionTokens: 0, totalTokens: 0, estimatedCostUSD: 0, calls: 0 }
   );
+  console.log(`[TokenStore] Totals calculated: ${totals.calls} calls, ${totals.totalTokens} tokens`);
+  return totals;
 }
 
 module.exports = { add, getAll, getTotals };

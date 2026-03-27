@@ -15,15 +15,18 @@ module.exports = async (req, res) => {
   }
 
   const { productUrl, productName } = req.body;
+  console.log(`[API/Compare] Request: Name="${productName}", URL="${productUrl}"`);
+
   if (!productUrl && !productName) {
     return res.status(400).json({ error: 'Please provide a product URL or name.' });
   }
 
   try {
     const data = await compareProduct(productUrl, productName);
+    console.log(`[API/Compare] Success: Found ${data.results?.length || 0} platforms`);
     res.status(200).json({ success: true, ...data });
   } catch (err) {
-    console.error(err);
+    console.error(`[API/Compare] ERROR:`, err.message);
     res.status(500).json({ error: 'AI processing failed', message: err.message });
   }
 };
