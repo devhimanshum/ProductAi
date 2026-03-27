@@ -149,15 +149,12 @@ function renderOverview(info, identifiedName) {
   const overviewImage = document.getElementById("overviewImage");
   const specsList     = document.getElementById("overviewSpecsList");
 
-  overviewTitle.textContent = identifiedName || info?.title || "Product Overview";
-  overviewDesc.textContent  = info?.description || "Product details identified from multiple sources.";
+  overviewTitle.textContent = identifiedName || info?.title || "Product Identified";
+  overviewDesc.textContent  = info?.description || "Technical specifications and pricing details gathered from multiple sources.";
   
-  if (info?.image_url) {
-    overviewImage.src = info.image_url;
-    overviewImage.classList.remove("hidden");
-  } else {
-    overviewImage.src = "https://via.placeholder.com/300x300?text=No+Image+Available";
-  }
+  const imgUrl = info?.image_url || "https://via.placeholder.com/300x300?text=Product+Image";
+  overviewImage.src = imgUrl;
+  overviewImage.classList.remove("hidden");
   
   // Render Specs
   specsList.innerHTML = "";
@@ -171,30 +168,29 @@ function renderOverview(info, identifiedName) {
       specsList.appendChild(li);
     });
   } else {
-    specsList.innerHTML = `<li style="grid-column: 1/-1; color:var(--text-muted)">Basic specifications not available for this specific item.</li>`;
+    specsList.innerHTML = `<li style="grid-column: 1/-1; color:var(--text-muted)">Technical specifications are currently being updated.</li>`;
   }
 }
 
 function renderTable(results) {
-  const sorted = sortResultsArray(results, currentSort, currentSortDir);
+  const sorted = sortResultsArray(results || [], currentSort, currentSortDir);
 
   // Find best (lowest) price for highlight
-  const bestPrice = sorted
-    .filter(r => r.price !== null && r.price !== undefined)
-    .reduce((min, r) => (min === null || r.price < min ? r.price : min), null);
+  const validPrices = sorted.filter(r => r.price !== null && r.price !== undefined && !isNaN(r.price));
+  const bestPrice = validPrices.length > 0 ? Math.min(...validPrices.map(r => r.price)) : null;
 
   resultsBody.innerHTML = sorted.map((r, i) => {
     const isBest  = r.price !== null && r.price === bestPrice;
     const priceHtml    = formatPrice(r, isBest);
     const discountHtml = formatDiscount(r);
-    const reviewsHtml  = formatReviews(r.reviews);
+    const reviewsHtml  = formatReviews(r.results_reviews || r.reviews);
     const availHtml    = formatAvailability(r.availability);
     const linkHtml     = formatLink(r.url, r.platform);
 
     return `
       <tr class="${isBest ? "best-row" : ""}">
         <td class="col-rank">${i + 1}</td>
-        <td><span class="platform-chip">${platformIcon(r.platform)} ${r.platform}</span></td>
+        <td><span class="platform-chip">${platformIcon(r.platform)} ${escHtml(r.platform || "Unknown")}</span></td>
         <td title="${escHtml(r.product_name || "—")}" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(r.product_name || "—")}</td>
         <td class="price-cell">${priceHtml}</td>
         <td>${discountHtml}</td>
@@ -202,7 +198,7 @@ function renderTable(results) {
         <td>${availHtml}</td>
         <td>${linkHtml}</td>
       </tr>`;
-  }).join("") || `<tr><td colspan="8" class="empty-row">No results found.</td></tr>`;
+  }).join("") || `<tr><td colspan="8" class="empty-row">No verified pricing available for this specified item.</td></tr>`;
 }
 
 function formatDiscount(r) {
