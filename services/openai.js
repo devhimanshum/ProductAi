@@ -97,14 +97,21 @@ Return ONLY the JSON. No explanation.`;
  * Compare prices for a given product across e-commerce platforms.
  */
 async function compareProduct(productUrl, productName) {
-  const userInput = await buildUserInput(productUrl, productName);
+  const scrapedData = productUrl ? await scrapeUrl(productUrl) : "";
+  const userInput = buildUserInput(productUrl, productName, scrapedData);
+  
+  // If scraper failed/blocked, add a fallback hint
+  const finalPrompt = scrapedData 
+    ? SYSTEM_PROMPT 
+    : `${SYSTEM_PROMPT}\n\n[NOTICE: LIVE PAGE DATA is empty (Scraper Blocked). You MUST rely on your internal MARKET BENCHMARKS for the source platform price.]`;
+
   const maxTokens = isVercel ? 1200 : 2500;
 
   const response = await getClient().chat.completions.create({
     model: MODEL,
     response_format: { type: "json_object" },
     messages: [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: finalPrompt },
       { role: "user",   content: userInput },
     ],
     temperature: 0.1,
@@ -148,26 +155,25 @@ async function scrapeUrl(url) {
   try {
     const { data } = await axios.get(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
-      timeout: 4500
+      timeout: 3500
     });
     const $ = cheerio.load(data);
     const title = $('title').text().trim();
     const ogImage = $('meta[property="og:image"]').attr('content') || $('link[rel="image_src"]').attr('href') || '';
     $('script, style, noscript, svg, img, iframe').remove();
-    // 4000 chars is usually enough to capture the title, MRP, and selling price block
     const textSnippet = $('body').text().replace(/\s+/g, ' ').trim().slice(0, 4000); 
     return `\n\n--- LIVE PAGE DATA ---\nTitle: ${title}\nMain Image URL: ${ogImage}\nPage Content: ${textSnippet}\n----------------------\n`;
   } catch (err) {
-    console.warn(`[Scraper] Failed to fetch ${url}:`, err.message);
+    console.warn(`[Scraper] Failed/Blocked for ${url}:`, err.message);
     return "";
   }
 }
 
-async function buildUserInput(productUrl, productName) {
+function buildUserInput(productUrl, productName, scrapedData) {
   let input = "";
   if (productUrl) {
     input += `Product URL: ${productUrl}\n`;
-    input += await scrapeUrl(productUrl);
+    input += scrapedData;
   }
   if (productName) {
     input += `Product Name: ${productName}\n`;
