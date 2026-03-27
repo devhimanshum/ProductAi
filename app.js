@@ -95,7 +95,9 @@ searchForm.addEventListener("submit", async (e) => {
     }
 
     if (!res.ok) {
-      throw new Error(data.error || data.message || "Unknown server error");
+      const errorMsg = data.error || data.message || "Unknown server error";
+      const errorDetail = data.message ? `: ${data.message}` : "";
+      throw new Error(`${errorMsg}${errorDetail}`);
     }
 
     // Render results
