@@ -36,89 +36,26 @@ function estimateCost(model, promptTokens, completionTokens) {
 }
 
 // ── System Prompt ────────────────────────────────────────────────────────────
-const SYSTEM_PROMPT = `You are the world's most advanced Product Price Intelligence Engine, specializing in the Indian E-commerce market (Amazon.in, Flipkart, Myntra, Ajio, Croma, Reliance Digital, etc.).
+const isVercel = process.env.VERCEL === '1' || !!process.env.VERCEL;
 
-### CORE MISSION:
-Identify the product accurately and provide a granular price comparison across ALL major platforms.
+// ── System Prompt ────────────────────────────────────────────────────────────
+const SYSTEM_PROMPT = `You are a high-speed Product Price Intelligence Engine for India. 
+${isVercel ? "LIMIT: Provide the top 8 major platforms only for maximum speed." : "Provide 10+ major platforms."}
 
-### DATA REQUIREMENTS:
-1. **PRODUCT INFO**: Provide a high-quality image URL, 1-2 sentence description, and at least 6-8 technical specifications.
-2. **RESULTS**: You MUST include at least 10 major platforms. If a price is unknown, set it to null but include the platform name.
-3. **PRICING**: 
-   - Ensure "price" (MRP) > "discount_price" (Selling Price).
-   - If only Selling Price is known, calculate MRP as ~1.2x to 1.5x.
-   - Always include real-looking review snippets for each platform.
+### MISSION:
+Provide high-accuracy pricing (MRP vs Selling Price), 6+ technical specs, and a direct image URL.
 
-### GOLD STANDARD EXAMPLE (Fashion):
+### GOLD STANDARD BLUEPRINT:
 {
-  "product_identified": "Allen Solly Men Solid Regular Fit Polo Neck Black T-Shirt",
+  "product_identified": "Allen Solly Men Solid Black Polo",
   "product_info": {
     "image_url": "https://rukminim1.flixcart.com/image/832/832/ktd9m680/t-shirt/7/z/n/s-161606216-allen-solly-original-imag6pnqyvhfhz4g.jpeg",
-    "description": "Crafted from a breathable cotton-poly blend, this classic polo features a sleek jet black finish, a ribbed collar, and two-button placket.",
-    "specifications": {
-      "Material": "60% Cotton, 40% Polyester",
-      "Fit": "Regular Fit",
-      "Neck": "Polo Neck",
-      "Sleeve": "Half Sleeve",
-      "Pattern": "Solid",
-      "Wash Care": "Machine Wash / Hand Wash"
-    }
+    "description": "Premium cotton-blend polo with a solid finish and regular fit.",
+    "specifications": { "Material": "60% Cotton", "Fit": "Regular", "Sleeve": "Half" }
   },
   "category": "Fashion",
   "results": [
-    {
-      "platform": "Myntra",
-      "product_name": "Allen Solly Men Black Polo T-shirt",
-      "price": 1299,
-      "discount_price": 649,
-      "discount_percentage": 50,
-      "currency": "INR",
-      "availability": "In Stock",
-      "url": "https://www.myntra.com/allen-solly-men-polo",
-      "reviews": ["Perfect fit", "Premium fabric quality"]
-    },
-    {
-      "platform": "Flipkart",
-      "product_name": "Allen Solly Solid Men Polo Black",
-      "price": 1099,
-      "discount_price": 599,
-      "discount_percentage": 45,
-      "currency": "INR",
-      "availability": "In Stock",
-      "url": "https://www.flipkart.com/allen-solly-polo",
-      "reviews": ["Very comfortable", "Great value"]
-    }
-  ]
-}
-
-### GOLD STANDARD EXAMPLE (Electronics):
-{
-  "product_identified": "Apple iPhone 15 Pro (128 GB) - Natural Titanium",
-  "product_info": {
-    "image_url": "https://m.media-amazon.com/images/I/81Sig6biNGL._AC_SL1500_.jpg",
-    "description": "Forged in titanium and featuring the groundbreaking A17 Pro chip, a customizable Action button, and a more versatile Pro camera system.",
-    "specifications": {
-      "Processor": "A17 Pro Chip with 6-core GPU",
-      "Display": "6.1-inch Super Retina XDR OLED",
-      "Main Camera": "48MP Pro System with 3x Optical Zoom",
-      "Charging": "USB-C with USB 3 support",
-      "Material": "Aerospace-grade Titanium",
-      "OS": "iOS 17"
-    }
-  },
-  "category": "Electronics",
-  "results": [
-    {
-      "platform": "Amazon India",
-      "product_name": "Apple iPhone 15 Pro (128 GB) - Natural Titanium",
-      "price": 134900,
-      "discount_price": 127900,
-      "discount_percentage": 5,
-      "currency": "INR",
-      "availability": "In Stock",
-      "url": "https://www.amazon.in/iphone-15-pro",
-      "reviews": ["Camera is incredible", "Titanium build feels light"]
-    }
+    { "platform": "Myntra", "price": 1299, "discount_price": 649, "url": "...", "reviews": ["Good fit"] }
   ]
 }
 
@@ -130,6 +67,7 @@ Return ONLY the JSON object. Do not talk.`;
  */
 async function compareProduct(productUrl, productName) {
   const userInput = buildUserInput(productUrl, productName);
+  const maxTokens = isVercel ? 1200 : 2500;
 
   const response = await getClient().chat.completions.create({
     model: MODEL,
@@ -138,8 +76,8 @@ async function compareProduct(productUrl, productName) {
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user",   content: userInput },
     ],
-    temperature: 0.2, // Slightly higher for better variability
-    max_tokens: 2500,
+    temperature: 0.1,
+    max_tokens: maxTokens,
   });
 
   const raw = response.choices[0].message.content;
