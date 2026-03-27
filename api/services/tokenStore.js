@@ -1,7 +1,14 @@
 const fs = require("fs");
 const path = require("path");
 
-const DB_PATH = path.join(__dirname, "../../db.json");
+// Vercel only allows writing to /tmp
+const DB_PATH = process.env.VERCEL ? "/tmp/db.json" : path.join(__dirname, "../../db.json");
+
+/**
+ * NOTE: Vercel is stateless. Data written to /tmp/db.json will be lost
+ * when the serverless function cold-starts. For permanent token tracking,
+ * please connect a real database (e.g., MongoDB, Supabase, Vercel KV).
+ */
 
 /**
  * Initialize the DB file if it doesn't exist.
