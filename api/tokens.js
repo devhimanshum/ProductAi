@@ -1,4 +1,4 @@
-const { getAll, getTotals } = require("../services/tokenStore");
+const { getAll, getTotals } = require("./services/tokenStore");
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');

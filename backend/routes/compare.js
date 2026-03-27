@@ -5,7 +5,7 @@
 
 const express  = require("express");
 const router   = express.Router();
-const { compareProduct } = require("../../services/openai");
+const { compareProduct } = require("../../api/services/openai");
 
 router.post("/", async (req, res) => {
   const { productUrl, productName } = req.body;

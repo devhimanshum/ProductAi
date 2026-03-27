@@ -5,7 +5,7 @@
 
 const express    = require("express");
 const router     = express.Router();
-const { getAll, getTotals } = require("../../services/tokenStore");
+const { getAll, getTotals } = require("../../api/services/tokenStore");
 
 router.get("/", (req, res) => {
   const entries = getAll();
