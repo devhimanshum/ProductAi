@@ -38,43 +38,53 @@ function estimateCost(model, promptTokens, completionTokens) {
 // ── System Prompt ────────────────────────────────────────────────────────────
 const isVercel = process.env.VERCEL === '1' || !!process.env.VERCEL;
 
-const SYSTEM_PROMPT = `You are a High-Precision Product Intelligence Engine.
-${isVercel ? "STRICT LIMIT: Provide the top 6-8 major Indian platforms only." : "Provide 10+ major Indian platforms."}
+const SYSTEM_PROMPT = `You are the Product Intelligence Engine 2.0.
+Your results MUST be grounded in the Indian Market (2024-2026).
 
-### RULE 1: IDENTITY FIRST (MANDATORY)
-You must analyze the user's input (URL or Name) with extreme care. 
-- DO NOT return a different model, a different version, or a 'similar' product.
-- If the user asks for a 'Blue' shirt, do not return 'Red'.
-- If the user asks for 'iPhone 15', do not return 'iPhone 14'.
+### RECENT MARKET BENCHMARKS (Grounded Truth):
+- Fashion (e.g. Allen Solly): Selling Price ₹600-900 | MRP ₹1099-1499.
+- Premium Tech (e.g. iPhone 15 Pro Max 256GB): Selling Price ₹1,34,900 - ₹1,59,900.
+- Use these scales for ALL similar category items.
 
-### RULE 2: DATA GROUNDING
-- Use your internal knowledge to find the EXACT MRP and Selling Price for the Indian market for THIS SPECIFIC product.
-- Specifications must be 100% accurate to this specific model.
+### IDENTITY PROTOCOL:
+1. Identify the EXACT model/variant. No generic results.
+2. If the user input is a URL, extract the platform and specific item first.
 
-### GOLD STANDARD JSON STRUCTURE:
+### SITE-SPECIFIC URL TEMPLATES:
+- Amazon.in: https://www.amazon.in/s?k=[encoded_query]
+- Flipkart: https://www.flipkart.com/search?q=[encoded_query]
+- Myntra: https://www.myntra.com/[query-with-hyphens]
+- Reliance Digital: https://www.reliancedigital.in/search?q=[encoded_query]
+
+### DATA QUALITY:
+- MRP MUST be >= Selling Price.
+- Include at least 8 PLATFORMS for Tech and 12 PLATFORMS for Fashion.
+- Image URLs must be high-resolution or from a known platform CDN.
+
+### GOLD STANDARD RESPONSE:
 {
-  "product_identified": "Exact Official Brand + Model + Variant Name",
+  "product_identified": "Brand + Model + Full Spec",
   "product_info": {
-    "image_url": "High-quality direct image link (.jpg/.png) relative to this EXACT product",
-    "description": "Accurate 1-sentence technical description.",
-    "specifications": { "Mandatory": "At least 6 specific technical details" }
+    "image_url": "Direct CDN Link",
+    "description": "Premium 1-sentence technical overview.",
+    "specifications": { "Key 1": "Val 1", "Key 2": "Val 2", "..." : "..." }
   },
-  "category": "Electronics | Fashion | Beauty | Home",
+  "category": "Fashion | Tech | Home | Beauty",
   "results": [
     {
-      "platform": "Amazon.in",
-      "product_name": "Full title as it appears on platform",
+      "platform": "...",
+      "product_name": "...",
       "price": 0, // MRP
-      "discount_price": 0, // Current Selling Price
+      "discount_price": 0, // Selling
       "currency": "INR",
-      "url": "Search or Direct Link",
-      "reviews": ["Real-sounding feedback 1", "Real-sounding feedback 2"]
+      "url": "Standardized URL",
+      "reviews": ["Real feedback 1", "Real feedback 2"]
     }
   ]
 }
 
 ### OUTPUT:
-Return ONLY the JSON object. Zero conversation.`;
+Return ONLY the JSON. No explanation.`;
 
 /**
  * Compare prices for a given product across e-commerce platforms.
